@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>d3_load_csv_json.html</title>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js">
+    </script> 
+    <script src="https://d3js.org/d3.v3.min.js">
+    </script>
+    <h1>car data</h1>
+    <p id="csvData"></p>
+    <script>
+
+       
+       var width = 1000;
+       var height = 600;
+       
+       //add a svg
+       var svg = d3.select("body")
+                   .append("svg")
+                   .attr("width", width + 100)
+                   .attr("height", height + 100)
+                   .attr("transform", "translate(" + 50 + "," + 50 + ")");
+                   
+       var data_year_order = Array.apply(null, {length: 13}).map(function(value, index){
+             return index + 1970;
+           });
+           
+       var data_mpg = [];
+       var data_year = [];
+       var data_country = [];
+       var datas = [];
+       
+       //padding
+       var padding = {left:50, right:0, top:30, bottom:50};
+       
+       
+       var datas;
+          d3.csv("cars.csv", function (data){
+               var tmp_year = 0;
+               for (var i = 0; i < data.length; i++) {
+                   //console.log(data[i].model);
+                   //console.log(data[i].MPG);
+                                   
+                   data_mpg.push(parseInt(data[i].MPG));
+                   data_year.push(parseInt(data[i].year));
+                   data_country.push(data[i].country);
+                   
+                   if (tmp_year != data[i].year) {
+                          datas.push({
+                          b10: {us: 0, jp: 0, eu: 0, total: 0, avg: 0},
+                          r1020: {us: 0, jp: 0, eu: 0, total: 0, avg: 0},
+                          r2030: {us: 0, jp: 0, eu: 0, total: 0, avg: 0},
+                          r3040: {us: 0, jp: 0, eu: 0, total: 0, avg: 0},
+                          r4050: {us: 0, jp: 0, eu: 0, total: 0, avg: 0}                 
+                          
+                       });
+                       
+                       tmp_year = data[i].year;
+                                       
+                   }
+                   
+                   update_data(data[i], datas[datas.length - 1]);
+               }
+                          
+               //define x axis range 
+               var xScale = d3.scale.linear()
+           .domain([1970,1982])
+           .range([0, width - padding.left - padding.right]);
+           
+               //define y axis range
+               var yScale = d3.scale.linear()
+           .domain([0,d3.max(data_mpg)])
+           .range([height - padding.top - padding.bottom, 0]);
+           
+           
+           //define x axis
+           var xAxis = d3.svg.axis()
+           .scale(xScale)
+           .orient("bottom");
+           
+           //define y axis
+           var yAxis = d3.svg.axis()
+                       .scale(yScale)
+                       .orient("left");  
+          
+          //draw x asis
+          svg.append("g")
+           .attr("class","axis")
+           .attr("transform","translate(" + padding.left + "," + (height - padding.bottom) + ")")
+           .call(xAxis);
+
+
+               //deaw y axis
+               svg.append("g")
+           .attr("class","axis")
+           .attr("transform","translate(" + padding.left + "," + padding.top + ")")
+           .call(yAxis);
+
+          //draw MPG
+          
+    //circles_data
+    var circles_data = [];
+    for (var i = 0;i < datas.length; i++) {
+       datas[i].b10.avg = datas[i].b10.total/(datas[i].b10.us + datas[i].b10.jp + datas[i].b10.eu);
+                  datas[i].r1020.avg = datas[i].r1020.total/(datas[i].r1020.us + datas[i].r1020.jp + datas[i].r1020.eu);
+                  datas[i].r2030.avg = datas[i].r2030.total/(datas[i].r2030.us + datas[i].r2030.jp + datas[i].r2030.eu);
+                  datas[i].r3040.avg = datas[i].r3040.total/(datas[i].r3040.us + datas[i].r3040.jp + datas[i].r3040.eu);
+                  datas[i].r4050.avg = datas[i].r4050.total/(datas[i].r4050.us + datas[i].r4050.jp + datas[i].r4050.eu);
+                  
+       
+                  
+       circles_data.push({mpg_avg:datas[i].b10.avg, mpg_total: datas[i].b10.total, year: i , c:1, cs: [datas[i].b10.us, datas[i].b10.jp, datas[i].b10.eu] });
+       circles_data.push({mpg_avg:datas[i].r1020.avg, mpg_total: datas[i].r1020.total, year: i, c:2, cs: [datas[i].r1020.us, datas[i].r1020.jp, datas[i].r1020.eu] });
+       circles_data.push({mpg_avg:datas[i].r2030.avg, mpg_total: datas[i].r2030.total, year: i, c: 3, cs: [datas[i].r2030.us, datas[i].r2030.jp, datas[i].r2030.eu] });
+       circles_data.push({mpg_avg:datas[i].r3040.avg, mpg_total: datas[i].r3040.total, year: i, c:4 , cs: [datas[i].r3040.us, datas[i].r3040.jp, datas[i].r3040.eu] });
+       circles_data.push({mpg_avg:datas[i].r4050.avg, mpg_total: datas[i].r4050.total, year: i, c:5, cs: [datas[i].r4050.us, datas[i].r4050.jp, datas[i].r4050.eu] });
+    }
+
+    var result = circles_data.map(a => a.cs);
+    var scale = d3.scale.sqrt()
+                                   .domain([d3.min(circles_data, function (d) { return d.mpg_total; }), d3.max(circles_data, function (d) { return d.mpg_total; })])
+                                   .range([1, 20]);
+    var x = d3.scale.linear()
+                                   .domain([d3.min(circles_data, function (d) { return d.year; }), d3.max(circles_data, function (d) { return d.year; })])
+                                   .range([0, width - padding.left - padding.right]);
+
+    var y = d3.scale.linear()
+                                   .domain([0, d3.max(circles_data, function (d) { return d.mpg_avg; })])
+                                   .range([height - padding.top - padding.bottom, 0]);
+                                   
+    var color = d3.scale.category20c();
+    var color1 = d3.scale.ordinal().range(["#f1eef6","#bdc9e1","#74a9cf","#0570b0"]),
+       diameter = 500;
+       
+    var opcaity = [1, 0.6, 0.3]
+
+    var bubble = d3.layout.pack()
+         .value(function(d) { return d3.sum(d); })
+         .sort(null)
+         .size([diameter, diameter]),
+       arc = d3.svg.arc().innerRadius(0),
+       pie = d3.layout.pie();
+       
+    var nodes = svg.selectAll("g.node")
+       .data(bubble.nodes({children: result}).filter(function(d) { return !d.children; }));
+       
+    nodes.enter().append("g")
+       .attr("class", "node")
+       .attr("transform", function(d, i) { return "translate(" + (x(circles_data[i].year)+ padding.left) + "," + (y(circles_data[i].mpg_avg) + padding.top) + ")"; })
+       .style("fill", function (d, i) {return draw_color(circles_data[i]);})
+       
+    var arcGs = nodes.selectAll("g.arc")
+       .data(function(d) {
+         return pie(d).map(function(m) { m.r = d.r/1.6; return m; });
+       });
+       
+    var arcEnter = arcGs.enter().append("g").attr("class", "arc");
+
+    arcEnter.append("path")
+       .attr("d", function(d) {
+         arc.outerRadius(d.r);
+         return arc(d);
+       })
+       .attr("opacity",function(d, i) { return opcaity[i]; });
+       
+       
+    svg.append('line').attr({
+		x1: 0 + padding.left,
+		y1: y(10) + padding.top,
+		x2: width + 5,
+		y2: y(10) + padding.top
+	}).style({
+		stroke: '#636363',
+		'stroke-width': 2
+	});
+	
+    svg.append('line').attr({
+		x1: 0 + padding.left,
+		y1: y(20) + padding.top,
+		x2: width,
+		y2: y(20) + padding.top
+	}).style({
+		stroke: '#e6550d',
+		'stroke-width': 2
+	});
+	
+	
+    svg.append('line').attr({
+		x1: 0 + padding.left,
+		y1: y(30) + padding.top,
+		x2: width,
+		y2: y(30) + padding.top
+	}).style({
+		stroke: '#fdae6b',
+		'stroke-width': 2
+	});
+	
+    svg.append('line').attr({
+		x1: 0 + padding.left,
+		y1: y(40) + padding.top,
+		x2: width,
+		y2: y(40) + padding.top
+	}).style({
+		stroke: '#74c476',
+		'stroke-width': 2
+	});
+       
+    svg.append("text")
+       .attr("text-anchor", "middle")  // this makes it easy to centre the text as the transform is applied to the anchor
+            .attr("transform", "translate("+ (50) +","+(20)+")")  // text is drawn off the screen top left, move down and out and rotate
+            .text("MPG").style("font-size",30);
+            
+    svg.append("text")
+       .attr("text-anchor", "middle")  // this makes it easy to centre the text as the transform is applied to the anchor
+            .attr("transform", "translate("+ (width/2) +","+(height )+")")  // text is drawn off the screen top left, move down and out and rotate
+            .text("year").style("font-size",30);
+            
+            
+    var legend_colors = ["#636363", "#e6550d", "#fdae6b", "#74c476", "#6baed6"]; 
+    var regions = ["US", "EU", "JP"];     
+    var legend = svg.selectAll('.legend')                     
+          .data(legend_colors)                                   
+          .enter()                                                
+          .append('g')                                            
+          .attr('class', 'legend');                                                     
+
+        legend.append('rect')                                     
+          .attr('width', 10)                          
+          .attr('height', 10)                         
+          .style('fill', function(d, i) {return legend_colors[i];})                                   
+          .style('stroke', function(d, i) {return legend_colors[i];})
+          .attr('transform', function(d, i) {                     
+            var height = 10 + 4;          
+            var offset =  height * legend_colors.length / 2;     
+            var horz = 2 * 4;                       
+            var vert = i * height + padding.left*2;                       
+            return 'translate(' + vert + ',' + horz + ')';        
+          })                                
+          
+          
+          legend.append('rect')                                     
+          .attr('width', 10)                          
+          .attr('height', 10)                         
+          .style('fill', function(d, i) {return legend_colors[i];})                                   
+          .style('stroke', function(d, i) {return legend_colors[i];})
+          .attr("opacity", 0.6)
+          .attr('transform', function(d, i) {                     
+            var height = 10 + 4;          
+            var offset =  height * legend_colors.length / 2;     
+            var horz = 2 * 4 + 20;                       
+            var vert = i * height + padding.left*2;                       
+            return 'translate(' + vert + ',' + horz + ')';        
+          });       
+          
+          
+          legend.append('rect')                                     
+          .attr('width', 10)                          
+          .attr('height', 10)                         
+          .style('fill', function(d, i) {return legend_colors[i];})                                   
+          .style('stroke', function(d, i) {return legend_colors[i];})
+          .attr("opacity", 0.3)
+          .attr('transform', function(d, i) {                     
+            var height = 10 + 4;          
+            var offset =  height * legend_colors.length / 2;     
+            var horz = 2 * 4 + 40;                       
+            var vert = i * height + padding.left*2;                       
+            return 'translate(' + vert + ',' + horz + ')';        
+          });              
+          
+          legend.append('text')
+          .attr('x',  5 * 14 + padding.left*2)
+          .attr('y', function(d, i) {return (20*i) + 20;})
+          .text(function(d, i){return regions[i];});                     
+       
+     })
+           
+       function draw_color(d) {
+           if (d.c == 1) {return "#636363"; }
+           else if (d.c == 2) {return "#e6550d";}
+           else if (d.c == 3) {return "#fdae6b";}
+           else if (d.c == 4) {return "#74c476";}
+           else {return "#6baed6";}
+       }
+           
+       function update_data(d, ds) {
+           MPG = parseInt(d.MPG);
+           switch(true) {
+               case (MPG<10):
+                   ds.b10.total += MPG;
+                   if (d.origin == "US") {ds.b10.us += 1;}                    
+                   else if (d.origin == "Europe") {ds.b10.eu += 1;}                     
+                   else {ds.b10.jp += 1}                    
+                   break;
+               case (MPG<20):
+                   ds.r1020.total += MPG;
+                   if (d.origin == "US") {ds.r1020.us += 1;}                    
+                   else if (d.origin == "Europe") {ds.r1020.eu += 1;}                     
+                   else {ds.r1020.jp += 1}   
+                   break;
+               case (MPG<30):
+                   ds.r2030.total += MPG;
+                   if (d.origin == "US") {ds.r2030.us += 1;}                    
+                   else if (d.origin == "Europe") {ds.r2030.eu += 1;}                     
+                   else {ds.r2030.jp += 1}   
+                   break;
+               case (MPG<40):
+                   ds.r3040.total += MPG;
+                   if (d.origin == "US") {ds.r3040.us += 1;}                    
+                   else if (d.origin == "Europe") {ds.r3040.eu += 1;}                     
+                   else {ds.r3040.jp += 1}   
+                   break;
+               default:
+                   ds.r4050.total += MPG;
+                   if (d.origin == "US") {ds.r4050.us += 1;}                    
+                   else if (d.origin == "Europe") {ds.r4050.eu += 1;}                     
+                   else {ds.r4050.jp += 1}  
+                   break;
+           
+           }
+       }
+           
+    </script>
+</body>
+</html>
